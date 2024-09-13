@@ -103,6 +103,7 @@ public:
     assert(size_x > 0);
     assert(size_y > 0);
 
+#if 0
     // Parallelize our 2d grid extraction!!
     std::vector<std::vector<cv::KeyPoint>> collection(valid_locs.size());
     parallel_for_(cv::Range(0, (int)valid_locs.size()), LambdaBody([&](const cv::Range &range) {
@@ -153,6 +154,15 @@ public:
     // Combine all the collections into our single vector
     for (size_t r = 0; r < collection.size(); r++) {
       pts.insert(pts.end(), collection.at(r).begin(), collection.at(r).end());
+    }
+#endif
+  
+    std::vector<cv::Point2f> pts_new;
+    cv::UMat cl_mat;
+    img.copyTo(cl_mat);
+    cv::goodFeaturesToTrack(cl_mat, pts_new, num_features, 0.01, 5);
+    for (size_t i = 0; i < pts_new.size(); i++) {
+      pts.push_back(cv::KeyPoint(pts_new.at(i), 1.0));
     }
 
     // Return if no points

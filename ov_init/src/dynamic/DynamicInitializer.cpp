@@ -46,7 +46,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
                                     std::unordered_map<size_t, std::shared_ptr<ov_type::Landmark>> &_features_SLAM) {
 
   // Get the newest and oldest timestamps we will try to initialize between!
-  auto rT1 = boost::posix_time::microsec_clock::local_time();
+  auto rT1 = std::chrono::steady_clock::now();
   double newest_cam_time = -1;
   for (auto const &feat : _db->get_internal_data()) {
     for (auto const &camtimepair : feat.second->timestamps) {
@@ -216,7 +216,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
   //    features_bearings.insert({feat->featid, bearing});
   //    features_index.insert({feat->featid, (int)features_index.size()});
   //  }
-  auto rT2 = boost::posix_time::microsec_clock::local_time();
+  auto rT2 = std::chrono::steady_clock::now();
 
   // ======================================================
   // ======================================================
@@ -381,7 +381,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
       }
     }
   }
-  auto rT3 = boost::posix_time::microsec_clock::local_time();
+  auto rT3 = std::chrono::steady_clock::now();
 
   // ======================================================
   // ======================================================
@@ -479,7 +479,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
   }
   PRINT_INFO("[init-d]: gravity in I0 was %.3f,%.3f,%.3f and |g| = %.4f\n", gravity_inI0(0), gravity_inI0(1), gravity_inI0(2),
              gravity_inI0.norm());
-  auto rT4 = boost::posix_time::microsec_clock::local_time();
+  auto rT4 = std::chrono::steady_clock::now();
 
   // ======================================================
   // ======================================================
@@ -887,7 +887,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
   assert(ceres_vars_ori.size() == ceres_vars_vel.size());
   assert(ceres_vars_ori.size() == ceres_vars_bias_a.size());
   assert(ceres_vars_ori.size() == ceres_vars_pos.size());
-  auto rT5 = boost::posix_time::microsec_clock::local_time();
+  auto rT5 = std::chrono::steady_clock::now();
 
   // Optimize the ceres graph
   ceres::Solver::Summary summary;
@@ -895,7 +895,7 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
   PRINT_INFO("[init-d]: %d iterations | %zu states, %zu feats (%zu valid) | %d param and %d res | cost %.4e => %.4e\n",
              (int)summary.iterations.size(), map_states.size(), map_features.size(), count_valid_features, summary.num_parameters,
              summary.num_residuals, summary.initial_cost, summary.final_cost);
-  auto rT6 = boost::posix_time::microsec_clock::local_time();
+  auto rT6 = std::chrono::steady_clock::now();
 
   // Return if we have failed!
   timestamp = newest_cam_time;
@@ -1094,14 +1094,14 @@ bool DynamicInitializer::initialize(double &timestamp, Eigen::MatrixXd &covarian
   _imu->set_fej(x);
 
   // Debug timing information about how long it took to initialize!!
-  auto rT7 = boost::posix_time::microsec_clock::local_time();
-  PRINT_DEBUG("[TIME]: %.4f sec for prelim tests\n", (rT2 - rT1).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec for linsys setup\n", (rT3 - rT2).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec for linsys\n", (rT4 - rT3).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec for ceres opt setup\n", (rT5 - rT4).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec for ceres opt\n", (rT6 - rT5).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec for ceres covariance\n", (rT7 - rT6).total_microseconds() * 1e-6);
-  PRINT_DEBUG("[TIME]: %.4f sec total for initialization\n", (rT7 - rT1).total_microseconds() * 1e-6);
+  auto rT7 = std::chrono::steady_clock::now();
+  PRINT_DEBUG("[TIME]: %.4f sec for prelim tests\n", std::chrono::duration<double, std::micro>(rT2 - rT1).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec for linsys setup\n", std::chrono::duration<double, std::micro>(rT3 - rT2).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec for linsys\n", std::chrono::duration<double, std::micro>(rT4 - rT3).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec for ceres opt setup\n", std::chrono::duration<double, std::micro>(rT5 - rT4).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec for ceres opt\n", std::chrono::duration<double, std::micro>(rT6 - rT5).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec for ceres covariance\n", std::chrono::duration<double, std::micro>(rT7 - rT6).count()  * 1e-6);
+  PRINT_DEBUG("[TIME]: %.4f sec total for initialization\n", std::chrono::duration<double, std::micro>(rT7 - rT1).count()  * 1e-6);
   free_state_memory();
   return true;
 }

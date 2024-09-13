@@ -16,12 +16,12 @@ add_definitions(-DROS_AVAILABLE=2)
 include_directories(
         src
         ${EIGEN3_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIRS}
+        # ${Boost_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
-        ${Boost_LIBRARIES}
+        # ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
 )
 

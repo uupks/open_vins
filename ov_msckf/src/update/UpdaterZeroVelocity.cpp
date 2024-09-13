@@ -32,7 +32,7 @@
 #include "utils/print.h"
 #include "utils/quat_ops.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <boost/math/distributions/chi_squared.hpp>
 
 using namespace ov_core;

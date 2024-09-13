@@ -203,7 +203,9 @@ Simulator::Simulator(VioManagerOptions &params_) {
   }
 
   // Nice sleep so the user can look at the printout
-  sleep(1);
+  // sleep(1);
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(1s);
 }
 
 void Simulator::perturb_parameters(std::mt19937 gen_state, VioManagerOptions &params_) {

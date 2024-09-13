@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.3)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
+# find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -38,7 +38,7 @@ list(APPEND thirdparty_libraries
 list(APPEND ament_libraries
         rclcpp
         tf2_ros
-        tf2_geometry_msgs
+        # tf2_geometry_msgs
         std_msgs
         geometry_msgs
         sensor_msgs

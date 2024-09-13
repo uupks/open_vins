@@ -32,7 +32,7 @@
 #include "utils/print.h"
 #include "utils/quat_ops.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <boost/math/distributions/chi_squared.hpp>
 
 using namespace ov_core;
@@ -62,8 +62,8 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     return;
 
   // Start timing
-  boost::posix_time::ptime rT0, rT1, rT2, rT3, rT4, rT5;
-  rT0 = boost::posix_time::microsec_clock::local_time();
+  std::chrono::steady_clock::time_point rT0, rT1, rT2, rT3, rT4, rT5;
+  rT0 = std::chrono::steady_clock::now();
 
   // 0. Get all timestamps our clones are at (and thus valid measurement times)
   std::vector<double> clonetimes;
@@ -92,7 +92,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
       it0++;
     }
   }
-  rT1 = boost::posix_time::microsec_clock::local_time();
+  rT1 = std::chrono::steady_clock::now();
 
   // 2. Create vector of cloned *CAMERA* poses at each of our clone timesteps
   std::unordered_map<size_t, std::unordered_map<double, FeatureInitializer::ClonePose>> clones_cam;
@@ -140,7 +140,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     }
     it1++;
   }
-  rT2 = boost::posix_time::microsec_clock::local_time();
+  rT2 = std::chrono::steady_clock::now();
 
   // Calculate the max possible measurement size
   size_t max_meas_size = 0;
@@ -254,7 +254,7 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
     ct_meas += res.rows();
     it2++;
   }
-  rT3 = boost::posix_time::microsec_clock::local_time();
+  rT3 = std::chrono::steady_clock::now();
 
   // We have appended all features to our Hx_big, res_big
   // Delete it so we do not reuse information
@@ -276,20 +276,20 @@ void UpdaterMSCKF::update(std::shared_ptr<State> state, std::vector<std::shared_
   if (Hx_big.rows() < 1) {
     return;
   }
-  rT4 = boost::posix_time::microsec_clock::local_time();
+  rT4 = std::chrono::steady_clock::now();
 
   // Our noise is isotropic, so make it here after our compression
   Eigen::MatrixXd R_big = _options.sigma_pix_sq * Eigen::MatrixXd::Identity(res_big.rows(), res_big.rows());
 
   // 6. With all good features update the state
   StateHelper::EKFUpdate(state, Hx_order_big, Hx_big, res_big, R_big);
-  rT5 = boost::posix_time::microsec_clock::local_time();
+  rT5 = std::chrono::steady_clock::now();
 
   // Debug print timing information
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds to clean\n", (rT1 - rT0).total_microseconds() * 1e-6);
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds to triangulate\n", (rT2 - rT1).total_microseconds() * 1e-6);
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds create system (%d features)\n", (rT3 - rT2).total_microseconds() * 1e-6, (int)feature_vec.size());
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds compress system\n", (rT4 - rT3).total_microseconds() * 1e-6);
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds update state (%d size)\n", (rT5 - rT4).total_microseconds() * 1e-6, (int)res_big.rows());
-  PRINT_ALL("[MSCKF-UP]: %.4f seconds total\n", (rT5 - rT1).total_microseconds() * 1e-6);
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds to clean\n", std::chrono::duration<double, std::micro>(rT1 - rT0).count()  * 1e-6);
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds to triangulate\n", std::chrono::duration<double, std::micro>(rT2 - rT1).count()  * 1e-6);
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds create system (%d features)\n", std::chrono::duration<double, std::micro>(rT3 - rT2).count()  * 1e-6, (int)feature_vec.size());
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds compress system\n", std::chrono::duration<double, std::micro>(rT4 - rT3).count()  * 1e-6);
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds update state (%d size)\n", std::chrono::duration<double, std::micro>(rT5 - rT4).count()  * 1e-6, (int)res_big.rows());
+  PRINT_ALL("[MSCKF-UP]: %.4f seconds total\n", std::chrono::duration<double, std::micro>(rT5 - rT1).count()  * 1e-6);
 }

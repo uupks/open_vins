@@ -197,7 +197,9 @@ SimulatorInit::SimulatorInit(InertialInitializerOptions &params_) {
   }
 
   // Nice sleep so the user can look at the printout
-  sleep(1);
+  // sleep(1);
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(1s);
 }
 
 void SimulatorInit::perturb_parameters(InertialInitializerOptions &params_) {

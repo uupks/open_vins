@@ -24,7 +24,7 @@
 #include "feat/Feature.h"
 #include "feat/FeatureDatabase.h"
 #include "feat/FeatureInitializer.h"
-#include "track/TrackAruco.h"
+// #include "track/TrackAruco.h"
 #include "track/TrackDescriptor.h"
 #include "track/TrackKLT.h"
 #include "track/TrackSIM.h"
@@ -104,13 +104,13 @@ VioManager::VioManager(VioManagerOptions &params_) : thread_init_running(false),
   // If we are recording statistics, then open our file
   if (params.record_timing_information) {
     // If the file exists, then delete it
-    if (boost::filesystem::exists(params.record_timing_filepath)) {
-      boost::filesystem::remove(params.record_timing_filepath);
+    if (std::filesystem::exists(params.record_timing_filepath)) {
+      std::filesystem::remove(params.record_timing_filepath);
       PRINT_INFO(YELLOW "[STATS]: found old file found, deleted...\n" RESET);
     }
     // Create the directory that we will open the file in
-    boost::filesystem::path p(params.record_timing_filepath);
-    boost::filesystem::create_directories(p.parent_path());
+    std::filesystem::path p(params.record_timing_filepath);
+    std::filesystem::create_directories(p.parent_path());
     // Open our statistics file!
     of_statistics.open(params.record_timing_filepath, std::ofstream::out | std::ofstream::app);
     // Write the header information into it
@@ -140,10 +140,10 @@ VioManager::VioManager(VioManagerOptions &params_) : thread_init_running(false),
   }
 
   // Initialize our aruco tag extractor
-  if (params.use_aruco) {
-    trackARUCO = std::shared_ptr<TrackBase>(new TrackAruco(state->_cam_intrinsics_cameras, state->_options.max_aruco_features,
-                                                           params.use_stereo, params.histogram_method, params.downsize_aruco));
-  }
+  // if (params.use_aruco) {
+  //   trackARUCO = std::shared_ptr<TrackBase>(new TrackAruco(state->_cam_intrinsics_cameras, state->_options.max_aruco_features,
+  //                                                          params.use_stereo, params.histogram_method, params.downsize_aruco));
+  // }
 
   // Initialize our state propagator
   propagator = std::make_shared<Propagator>(params.imu_noises, params.gravity_mag);
@@ -192,7 +192,7 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
                                              const std::vector<std::vector<std::pair<size_t, Eigen::VectorXf>>> &feats) {
 
   // Start timing
-  rT1 = boost::posix_time::microsec_clock::local_time();
+  rT1 = std::chrono::steady_clock::now();
 
   // Check if we actually have a simulated tracker
   // If not, recreate and re-cast the tracker to our simulation tracker
@@ -213,7 +213,7 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
 
   // Feed our simulation tracker
   trackSIM->feed_measurement_simulation(timestamp, camids, feats);
-  rT2 = boost::posix_time::microsec_clock::local_time();
+  rT2 = std::chrono::steady_clock::now();
 
   // Check if we should do zero-velocity, if so update the state with it
   // Note that in the case that we only use in the beginning initialization phase
@@ -256,7 +256,7 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
 void VioManager::track_image_and_update(const ov_core::CameraData &message_const) {
 
   // Start timing
-  rT1 = boost::posix_time::microsec_clock::local_time();
+  rT1 = std::chrono::steady_clock::now();
 
   // Assert we have valid measurement data and ids
   assert(!message_const.sensor_ids.empty());
@@ -286,7 +286,7 @@ void VioManager::track_image_and_update(const ov_core::CameraData &message_const
   if (is_initialized_vio && trackARUCO != nullptr) {
     trackARUCO->feed_new_camera(message);
   }
-  rT2 = boost::posix_time::microsec_clock::local_time();
+  rT2 = std::chrono::steady_clock::now();
 
   // Check if we should do zero-velocity, if so update the state with it
   // Note that in the case that we only use in the beginning initialization phase
@@ -310,7 +310,7 @@ void VioManager::track_image_and_update(const ov_core::CameraData &message_const
   if (!is_initialized_vio) {
     is_initialized_vio = try_to_initialize(message);
     if (!is_initialized_vio) {
-      double time_track = (rT2 - rT1).total_microseconds() * 1e-6;
+      double time_track = std::chrono::duration<double, std::micro>(rT2 - rT1).count()  * 1e-6;
       PRINT_DEBUG(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
       return;
     }
@@ -340,7 +340,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
   if (state->_timestamp != message.timestamp) {
     propagator->propagate_and_clone(state, message.timestamp);
   }
-  rT3 = boost::posix_time::microsec_clock::local_time();
+  rT3 = std::chrono::steady_clock::now();
 
   // If we have not reached max clones, we should just return...
   // This isn't super ideal, but it keeps the logic after this easier...
@@ -524,7 +524,7 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     featsup_MSCKF.erase(featsup_MSCKF.begin(), featsup_MSCKF.end() - state->_options.max_msckf_in_update);
   updaterMSCKF->update(state, featsup_MSCKF);
   propagator->invalidate_cache();
-  rT4 = boost::posix_time::microsec_clock::local_time();
+  rT4 = std::chrono::steady_clock::now();
 
   // Perform SLAM delay init and update
   // NOTE: that we provide the option here to do a *sequential* update
@@ -543,9 +543,9 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
     propagator->invalidate_cache();
   }
   feats_slam_UPDATE = feats_slam_UPDATE_TEMP;
-  rT5 = boost::posix_time::microsec_clock::local_time();
+  rT5 = std::chrono::steady_clock::now();
   updaterSLAM->delayed_init(state, feats_slam_DELAYED);
-  rT6 = boost::posix_time::microsec_clock::local_time();
+  rT6 = std::chrono::steady_clock::now();
 
   //===================================================================================
   // Update our visualization feature set, and clean up the old features
@@ -594,20 +594,20 @@ void VioManager::do_feature_propagate_update(const ov_core::CameraData &message)
 
   // Finally marginalize the oldest clone if needed
   StateHelper::marginalize_old_clone(state);
-  rT7 = boost::posix_time::microsec_clock::local_time();
+  rT7 = std::chrono::steady_clock::now();
 
   //===================================================================================
   // Debug info, and stats tracking
   //===================================================================================
 
   // Get timing statitics information
-  double time_track = (rT2 - rT1).total_microseconds() * 1e-6;
-  double time_prop = (rT3 - rT2).total_microseconds() * 1e-6;
-  double time_msckf = (rT4 - rT3).total_microseconds() * 1e-6;
-  double time_slam_update = (rT5 - rT4).total_microseconds() * 1e-6;
-  double time_slam_delay = (rT6 - rT5).total_microseconds() * 1e-6;
-  double time_marg = (rT7 - rT6).total_microseconds() * 1e-6;
-  double time_total = (rT7 - rT1).total_microseconds() * 1e-6;
+  double time_track = std::chrono::duration<double, std::micro>(rT2 - rT1).count()  * 1e-6;
+  double time_prop = std::chrono::duration<double, std::micro>(rT3 - rT2).count()  * 1e-6;
+  double time_msckf = std::chrono::duration<double, std::micro>(rT4 - rT3).count()  * 1e-6;
+  double time_slam_update = std::chrono::duration<double, std::micro>(rT5 - rT4).count()  * 1e-6;
+  double time_slam_delay = std::chrono::duration<double, std::micro>(rT6 - rT5).count()  * 1e-6;
+  double time_marg = std::chrono::duration<double, std::micro>(rT7 - rT6).count()  * 1e-6;
+  double time_total = std::chrono::duration<double, std::micro>(rT7 - rT1).count()  * 1e-6;
 
   // Timing information
   PRINT_DEBUG(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
